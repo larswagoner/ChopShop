@@ -1,9 +1,9 @@
 import numpy as np
-from PySide6.QtCore import Qt, Signal, QPointF
+from PySide6.QtCore import Qt, Signal, QPointF, QRectF
 from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QBrush, QFont, QFontMetrics
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QComboBox
 
-from ..labeler import LABEL_COLORS, DEFAULT_LABEL_COLOR
+from ..labeler import LABEL_COLORS, DEFAULT_LABEL_COLOR, STANDARD_LABELS
 
 
 # Alternate colours for adjacent slices
@@ -28,6 +28,7 @@ class WaveformWidget(QWidget):
     markers_changed = Signal()       # emitted when user drags/adds/deletes a marker
     marker_added = Signal(int)       # emitted with index of newly added marker
     slice_clicked = Signal(int)      # emitted when user clicks inside a slice region
+    label_changed = Signal(int, str) # emitted with (index, new_label) when pill is edited
 
     MARKER_HIT_PX = 6               # grab zone half-width in pixels
 
@@ -49,6 +50,10 @@ class WaveformWidget(QWidget):
         # The first marker is always 0 and is not draggable.
         self._markers: list[int] = []
         self._labels: list[str] = []
+
+        # Pill hit rects for click-to-edit (rebuilt each paint)
+        self._pill_rects: list[tuple[int, QRectF]] = []  # (marker_index, rect)
+        self._active_combo: QComboBox | None = None
 
         # Interaction state
         self._dragging_idx: int | None = None
@@ -180,6 +185,7 @@ class WaveformWidget(QWidget):
         # Markers + labels
         p.setFont(LABEL_FONT)
         fm = QFontMetrics(LABEL_FONT)
+        self._pill_rects = []
         for i, s in enumerate(self._markers):
             x = self._sample_to_x(s)
             is_hover = (i == self._hover_idx)
@@ -212,6 +218,8 @@ class WaveformWidget(QWidget):
                 p.setPen(QColor(0, 0, 0))
                 p.drawText(pill_x + 4, pill_y + fm.ascent() + 2, label)
                 p.setBrush(Qt.BrushStyle.NoBrush)
+                # Record pill rect for click detection
+                self._pill_rects.append((i, QRectF(pill_x, pill_y, text_w, text_h)))
 
         # Playhead
         if self._playhead >= 0:
@@ -246,6 +254,42 @@ class WaveformWidget(QWidget):
                 return i
         return None
 
+    def _pill_at(self, x: float, y: float) -> int | None:
+        """Return marker index if (x, y) hits a label pill, else None."""
+        for idx, rect in self._pill_rects:
+            if rect.contains(QPointF(x, y)):
+                return idx
+        return None
+
+    def _show_label_combo(self, marker_idx: int, rect: QRectF):
+        """Show an inline combobox over the pill for label editing."""
+        if self._active_combo is not None:
+            self._active_combo.deleteLater()
+        combo = QComboBox(self)
+        combo.setEditable(True)
+        combo.addItems(STANDARD_LABELS)
+        current = self._labels[marker_idx] if marker_idx < len(self._labels) else ""
+        if current and current not in STANDARD_LABELS:
+            combo.addItem(current)
+        combo.setCurrentText(current)
+        combo.setGeometry(int(rect.x()), int(rect.y()), max(int(rect.width()) + 40, 110), int(rect.height()) + 4)
+        combo.setFocus()
+        combo.showPopup()
+
+        def _on_done(text: str, idx=marker_idx):
+            if idx < len(self._labels):
+                self._labels[idx] = text
+            self.update()
+            self.label_changed.emit(idx, text)
+            combo.deleteLater()
+            self._active_combo = None
+
+        combo.activated.connect(lambda _: _on_done(combo.currentText()))
+        # Also accept on focus loss (e.g. typed custom text then clicked away)
+        combo.lineEdit().editingFinished.connect(lambda: _on_done(combo.currentText()))
+        combo.show()
+        self._active_combo = combo
+
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
             # Right-click: delete marker (except first)
@@ -259,6 +303,17 @@ class WaveformWidget(QWidget):
                 self.markers_changed.emit()
             return
         if event.button() != Qt.MouseButton.LeftButton:
+            return
+        # Check if clicking on a label pill
+        pill_idx = self._pill_at(event.position().x(), event.position().y())
+        if pill_idx is not None:
+            rect = None
+            for pi, pr in self._pill_rects:
+                if pi == pill_idx:
+                    rect = pr
+                    break
+            if rect is not None:
+                self._show_label_combo(pill_idx, rect)
             return
         idx = self._marker_at_x(event.position().x())
         if idx is not None:

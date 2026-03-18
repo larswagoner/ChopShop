@@ -106,8 +106,12 @@ chopshop/
   files.py       # File I/O, preset installation
   preset.py      # AUSampler .aupreset generation
   preview.py     # Terminal playback preview
+  labeler.py     # Auto-labeler (spectral heuristics)
+  chopmap.py     # Chopmap JSON export
+  midi_gen.py    # MIDI file generation from chopmaps
+  patterns/      # Built-in drum pattern presets (JSON)
   gui/
-    waveform.py  # Interactive waveform widget
+    waveform.py  # Interactive waveform widget (label pills, click-to-edit)
     window.py    # Main GUI window
 tests/
   test_analysis.py
@@ -115,6 +119,70 @@ tests/
   test_files.py
   test_preset.py
 ```
+
+## Version History
+
+ChopShop has been built iteratively, feature by feature. Here's the chronological record of what was added and when.
+
+### v0.1 — Core CLI (foundation)
+**Status: stable, well-tested (30 tests passing)**
+
+The original version. Load a WAV file, chop it into slices, export individual WAVs, and generate an AUSampler `.aupreset` for GarageBand.
+
+- Three slicing modes: **onset** (transient/beat detection via librosa), **grid** (BPM-locked subdivisions at 4th/8th/16th/32nd), **equal** (uniform division into N slices)
+- BPM auto-detection with manual override
+- AUSampler `.aupreset` generation with proper plist XML, indirect file references, and MIDI zone mapping
+- Chop zones (one key per slice) and cue zones (each key plays from that onset to end of file)
+- Full-file key zone (optional, plays the entire unsliced sample)
+- Configurable MIDI root notes for chops and cues
+- Fade-out per chop (linear ramp, configurable in ms)
+- `--preview` flag to audition slices in the terminal before committing
+- `--dry-run` for analysis-only output
+- Automatic preset installation to `~/Library/Audio/Presets/Apple/AUSampler/`
+- Audio export to `~/Library/Audio/Sounds/ChopShop/<name>/`
+- Full test suite: `test_analysis.py` (11 tests), `test_export.py` (7 tests), `test_files.py` (4 tests), `test_preset.py` (8 tests)
+
+### v0.2 — GUI
+**Status: stable, well-tested**
+
+A full native desktop GUI built with PySide6.
+
+- Interactive waveform display with QPainter rendering
+- Colored alternating slice regions on the waveform
+- All CLI options exposed as GUI controls (mode, threshold, BPM, grid resolution, slice count, MIDI roots, fade, cue zones, full key toggle)
+- Click any slice on the waveform to preview/audition it
+- Play All button with animated playhead tracking
+- Preset name text field (auto-fills from filename)
+- File info display (duration, sample rate)
+- Status bar with operation feedback
+
+### v0.3 — Interactive Slice Editing
+**Status: stable, well-tested**
+
+Made the waveform fully interactive — you can now sculpt your chop points by hand.
+
+- **Drag markers**: grab any slice boundary on the waveform and drag to reposition
+- **Double-click to add**: double-click anywhere on the waveform to insert a new slice marker
+- **Right-click to delete**: right-click a marker to remove it
+- Visual marker handles at the top of each boundary line
+- Hover highlighting on markers
+- SliceMap rebuilds automatically when markers change
+
+### v0.4 — Auto-Labeler & Semantic Slicing *(experimental)*
+**Status: experimental — auto-detection is heuristic-based and works as suggestions, not ground truth**
+
+Slice labeling, chopmap export, and MIDI pattern generation. The vision: label your chops semantically (kick, snare, hat, etc.), export a `.chopmap.json`, then generate `.mid` files with drum patterns that use your actual chopped sounds.
+
+- **Auto-labeler** (`chopshop/labeler.py`): classifies each slice using spectral features (centroid, zero-crossing rate, RMS energy, low/high band energy, duration). Uses adaptive file-relative thresholds so it works across different recordings. 12 standard labels: kick, snare, snare_ghost, hat_closed, hat_open, ride, crash, tom_high, tom_mid, tom_low, combo, other
+- **Colored label pills** on the waveform — each label has a category color (orange=kick, gold=snare, cyan=hats/cymbals, green=toms, grey=other)
+- **Click-to-edit labels**: click any label pill on the waveform to change it via dropdown
+- **Slice list panel**: collapsible table below the waveform showing index, start, end, duration, and an editable label combobox per slice
+- **Re-label All** button to re-run auto-detection on all slices
+- **Chopmap JSON export** (`chopshop/chopmap.py`): saves a `.chopmap.json` alongside the audio files mapping each slice to its MIDI note, label, timing, and filename
+- **MIDI generation CLI** (`chopshop-midi`): reads a chopmap + pattern preset, generates a `.mid` file with the drum pattern mapped to your actual chop notes
+- **Built-in pattern presets**: `basic-jungle`, `amen-classic`, `halftime`, `roller` — JSON files defining step patterns by label
+- **Copy MIDI Command / Copy Chopmap Path** buttons in the export success dialog for easy workflow
+- Source BPM field in export settings
 
 ## Development
 

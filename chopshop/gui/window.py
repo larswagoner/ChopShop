@@ -6,6 +6,7 @@ import numpy as np
 import sounddevice as sd
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -275,6 +276,7 @@ class MainWindow(QMainWindow):
         self._waveform.slice_clicked.connect(self._play_slice)
         self._waveform.markers_changed.connect(self._on_markers_changed)
         self._waveform.marker_added.connect(self._on_marker_added)
+        self._waveform.label_changed.connect(self._on_waveform_label_changed)
         self._combo_mode.currentTextChanged.connect(self._on_mode_changed)
         self._btn_toggle_table.toggled.connect(self._toggle_slice_table)
         self._btn_relabel.clicked.connect(self._relabel_all)
@@ -428,6 +430,12 @@ class MainWindow(QMainWindow):
         self._waveform.set_labels(labels)
         # Rebuild slice map
         self._on_markers_changed()
+
+    def _on_waveform_label_changed(self, index: int, label: str):
+        """Handle label change from clicking a pill on the waveform."""
+        if self._slice_map is not None and index < len(self._slice_map.slices):
+            self._slice_map.slices[index].label = label
+        self._rebuild_slice_table()
 
     # ------------------------------------------------------------------
     # Slice table
@@ -604,14 +612,35 @@ class MainWindow(QMainWindow):
         chop_start = note_name(chop_root)
         chop_end = note_name(chop_root + len(self._slice_map.slices) - 1)
 
-        QMessageBox.information(
-            self, "Preset Generated",
+        midi_cmd = f"chopshop-midi --map \"{chopmap_path}\" --preset basic-jungle --bpm 170 --bars 4 -o drums.mid"
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Icon.Information)
+        msg.setWindowTitle("Preset Generated")
+        msg.setText(
             f"Preset: {preset_path.name}\n"
             f"Chopmap: {chopmap_path.name}\n"
             f"Audio: {audio_dir}\n"
             f"Zones: {n_zones} ({len(export_result.chop_paths)} chops)\n"
-            f"Keys: {chop_start} - {chop_end}\n\n"
-            f"Open GarageBand and load the preset from the AUSampler browser.\n"
-            f"Use chopshop-midi with the chopmap to generate MIDI patterns.",
+            f"Keys: {chop_start} - {chop_end}"
         )
-        self.statusBar().showMessage(f"Preset saved: {preset_path}", 5000)
+        msg.setInformativeText(
+            "Open GarageBand and load the preset from the AUSampler browser."
+        )
+        msg.setDetailedText(
+            f"MIDI generation command:\n{midi_cmd}\n\n"
+            f"Chopmap path (for Claude or scripts):\n{chopmap_path}"
+        )
+        btn_ok = msg.addButton(QMessageBox.StandardButton.Ok)
+        btn_copy = msg.addButton("Copy MIDI Command", QMessageBox.ButtonRole.ActionRole)
+        btn_copy_path = msg.addButton("Copy Chopmap Path", QMessageBox.ButtonRole.ActionRole)
+        msg.exec()
+
+        if msg.clickedButton() == btn_copy:
+            QApplication.clipboard().setText(midi_cmd)
+            self.statusBar().showMessage("MIDI command copied to clipboard.", 5000)
+        elif msg.clickedButton() == btn_copy_path:
+            QApplication.clipboard().setText(str(chopmap_path))
+            self.statusBar().showMessage("Chopmap path copied to clipboard.", 5000)
+        else:
+            self.statusBar().showMessage(f"Preset saved: {preset_path}", 5000)

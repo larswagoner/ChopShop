@@ -156,7 +156,10 @@ def generate_midi(
             last_tick = tick
 
     if warnings:
+        available = sorted(set(s.get("label", "") for s in chopmap.get("slices", []) if s.get("label")))
         print(f"Warning: labels not found in chopmap (skipped): {', '.join(warnings)}", file=sys.stderr)
+        print(f"  Available labels in chopmap: {', '.join(available) if available else '(none)'}", file=sys.stderr)
+        print(f"  Tip: edit labels in the GUI or re-label slices to match the pattern.", file=sys.stderr)
 
     out_path = Path(output)
     mid.save(str(out_path))
