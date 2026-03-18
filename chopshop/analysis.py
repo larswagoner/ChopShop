@@ -168,6 +168,9 @@ def _grid_slices(
     interval_samples = int(interval_seconds * sr)
 
     points = list(range(0, total_samples, interval_samples))
+    # Drop final point if it would create a negligibly short slice
+    if len(points) > 1 and (total_samples - points[-1]) < interval_samples // 4:
+        points.pop()
     return points
 
 

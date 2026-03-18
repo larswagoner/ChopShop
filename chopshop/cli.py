@@ -60,7 +60,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_GRID_RESOLUTION,
         help="Grid subdivision (default: 16th, grid mode only)",
     )
-    p.add_argument("--quantize-bpm", type=float, help="Snap/set BPM")
+    p.add_argument("--bpm", type=float, help="Set BPM (overrides auto-detection)")
+    p.add_argument("--quantize-bpm", type=float, help="Alias for --bpm")
     p.add_argument("--start", type=float, help="Trim start time (seconds)")
     p.add_argument("--end", type=float, help="Trim end time (seconds)")
     p.add_argument(
@@ -87,6 +88,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output-dir", help="Override preset output directory")
     p.add_argument("--audio-dir", help="Override audio directory")
     p.add_argument(
+        "--preview", action="store_true",
+        help="Play back each slice in the terminal before generating preset",
+    )
+    p.add_argument(
         "--dry-run", action="store_true",
         help="Analyze and print slice info without writing files",
     )
@@ -105,8 +110,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.mode == "equal" and args.num_slices is None:
         parser.error("Equal mode requires --num-slices.")
 
-    if args.mode == "grid" and args.quantize_bpm is None:
-        print("Note: Grid mode with auto-detected BPM. Use --quantize-bpm for accuracy.",
+    # Resolve --bpm and --quantize-bpm (--bpm takes precedence)
+    effective_bpm = args.bpm or args.quantize_bpm
+    args.quantize_bpm = effective_bpm
+
+    if args.mode == "grid" and effective_bpm is None:
+        print("Note: Grid mode with auto-detected BPM. Use --bpm for accuracy.",
               file=sys.stderr)
 
     source_name = input_path.stem
@@ -138,7 +147,11 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     # Print summary
-    print(f"\nBPM: {slice_map.bpm:.1f}")
+    if effective_bpm:
+        print(f"\nBPM: {effective_bpm:.1f} (user-supplied)")
+    else:
+        print(f"\nBPM: {slice_map.bpm:.1f} (detected)")
+        print(f"  Hint: If this seems wrong (e.g. half-tempo), use --bpm {slice_map.bpm * 2:.0f} or --bpm {slice_map.bpm * 1.5:.0f}")
     print(f"Duration: {slice_map.duration:.3f}s ({slice_map.total_samples} samples @ {sr}Hz)")
     print(f"Slices: {len(slice_map.slices)}")
     print()
@@ -150,6 +163,12 @@ def main(argv: list[str] | None = None) -> None:
             cue_note = note_name(args.cue_root + s.index)
             line += f" / {cue_note}"
         print(line)
+
+    if args.preview:
+        from .preview import preview_slices
+        if not preview_slices(y, sr, slice_map, args.chop_root):
+            print("\nAborted.")
+            return
 
     if args.dry_run:
         print("\n--dry-run: No files written.")
