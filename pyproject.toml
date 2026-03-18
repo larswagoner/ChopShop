@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chopshop"
+version = "0.1.0"
+description = "Chop audio and generate AUSampler presets for GarageBand"
+requires-python = ">=3.10"
+dependencies = [
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "numpy>=1.24.0",
+    "sounddevice>=0.4.6",
+]
+
+[project.scripts]
+chopshop = "chopshop.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
