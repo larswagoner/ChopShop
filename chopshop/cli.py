@@ -16,8 +16,10 @@ from .constants import (
     MIDI_NOTE_NAMES,
     MIDI_NOTES,
 )
+from .chopmap import export_chopmap
 from .export import export_slices
 from .files import install_preset, open_template, resolve_audio_dir
+from .labeler import auto_label
 from .preset import generate_preset
 
 
@@ -84,6 +86,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--fade-ms", type=float, default=0.0,
         help="Fade-out in ms for each chop (default: 0, recommended 5-10 for vocals)",
     )
+    p.add_argument("--source-bpm", type=float, help="Original BPM of the source sample (stored in chopmap)")
     p.add_argument("--open-template", help="Path to .band template to open after")
     p.add_argument("--output-dir", help="Override preset output directory")
     p.add_argument("--audio-dir", help="Override audio directory")
@@ -146,6 +149,11 @@ def main(argv: list[str] | None = None) -> None:
         grid_resolution=args.grid_resolution,
     )
 
+    # Auto-label slices
+    labels = auto_label(y, sr, slice_map.slices)
+    for i, s in enumerate(slice_map.slices):
+        s.label = labels[i] if i < len(labels) else ""
+
     # Print summary
     if effective_bpm:
         print(f"\nBPM: {effective_bpm:.1f} (user-supplied)")
@@ -158,7 +166,8 @@ def main(argv: list[str] | None = None) -> None:
     for s in slice_map.slices:
         chop_note = note_name(args.chop_root + s.index)
         dur = s.end_seconds - s.start_seconds
-        line = f"  [{s.index:2d}]  {s.start_seconds:.3f}s - {s.end_seconds:.3f}s  ({dur:.3f}s)  -> {chop_note}"
+        label_str = f"  [{s.label}]" if s.label else ""
+        line = f"  [{s.index:2d}]  {s.start_seconds:.3f}s - {s.end_seconds:.3f}s  ({dur:.3f}s)  -> {chop_note}{label_str}"
         if args.cue_zones:
             cue_note = note_name(args.cue_root + s.index)
             line += f" / {cue_note}"
@@ -194,11 +203,19 @@ def main(argv: list[str] | None = None) -> None:
     )
     preset_path = install_preset(preset_bytes, preset_name, args.output_dir)
 
+    # Export chopmap
+    chopmap_path = export_chopmap(
+        slice_map, export_result, preset_name,
+        chop_root=args.chop_root,
+        source_bpm=args.source_bpm,
+    )
+
     # Summary
     total_zones = len(export_result.chop_paths) + len(export_result.cue_paths)
     if not args.no_full_key and export_result.full_path:
         total_zones += 1
     print(f"\nPreset written: {preset_path}")
+    print(f"Chopmap written: {chopmap_path}")
     print(f"Audio directory: {audio_dir}")
     print(f"Zones: {total_zones} ({len(export_result.chop_paths)} chops", end="")
     if export_result.cue_paths:

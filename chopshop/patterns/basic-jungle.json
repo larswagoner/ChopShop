@@ -1,0 +1,46 @@
+{
+  "name": "Basic Jungle",
+  "description": "Standard 2-bar jungle pattern: kick, snare, hats, ghost notes at 170 BPM",
+  "bpm": 170,
+  "bars": 2,
+  "time_signature": [4, 4],
+  "resolution": 16,
+  "tracks": [
+    {
+      "name": "drums",
+      "channel": 9,
+      "steps": [
+        {"pos": 0,  "label": "kick",       "velocity": 120},
+        {"pos": 3,  "label": "kick",       "velocity": 110},
+        {"pos": 6,  "label": "snare_ghost", "velocity": 70},
+        {"pos": 8,  "label": "kick",       "velocity": 115},
+        {"pos": 12, "label": "snare",      "velocity": 120},
+        {"pos": 14, "label": "kick",       "velocity": 100},
+        {"pos": 16, "label": "kick",       "velocity": 120},
+        {"pos": 19, "label": "kick",       "velocity": 105},
+        {"pos": 22, "label": "snare_ghost", "velocity": 65},
+        {"pos": 24, "label": "snare",      "velocity": 120},
+        {"pos": 26, "label": "snare_ghost", "velocity": 75},
+        {"pos": 28, "label": "snare",      "velocity": 115},
+        {"pos": 30, "label": "snare_ghost", "velocity": 60},
+
+        {"pos": 0,  "label": "hat_closed", "velocity": 90},
+        {"pos": 2,  "label": "hat_closed", "velocity": 80},
+        {"pos": 4,  "label": "hat_closed", "velocity": 85},
+        {"pos": 6,  "label": "hat_closed", "velocity": 75},
+        {"pos": 8,  "label": "hat_closed", "velocity": 90},
+        {"pos": 10, "label": "hat_closed", "velocity": 80},
+        {"pos": 12, "label": "hat_open",   "velocity": 95},
+        {"pos": 14, "label": "hat_closed", "velocity": 80},
+        {"pos": 16, "label": "hat_closed", "velocity": 90},
+        {"pos": 18, "label": "hat_closed", "velocity": 80},
+        {"pos": 20, "label": "hat_closed", "velocity": 85},
+        {"pos": 22, "label": "hat_closed", "velocity": 75},
+        {"pos": 24, "label": "hat_closed", "velocity": 90},
+        {"pos": 26, "label": "hat_closed", "velocity": 80},
+        {"pos": 28, "label": "hat_open",   "velocity": 95},
+        {"pos": 30, "label": "hat_closed", "velocity": 80}
+      ]
+    }
+  ]
+}

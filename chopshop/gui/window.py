@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -19,6 +20,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QStatusBar,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -35,8 +38,10 @@ from ..constants import (
     MIDI_NOTE_NAMES,
     MIDI_NOTES,
 )
+from ..chopmap import export_chopmap
 from ..export import export_slices
 from ..files import install_preset, resolve_audio_dir
+from ..labeler import STANDARD_LABELS, auto_label, auto_label_single
 from ..preset import generate_preset
 from .waveform import WaveformWidget
 
@@ -81,6 +86,28 @@ class MainWindow(QMainWindow):
         # --- Waveform ---
         self._waveform = WaveformWidget()
         root.addWidget(self._waveform, 1)
+
+        # --- Slice table ---
+        self._btn_toggle_table = QPushButton("Show Slice List")
+        self._btn_toggle_table.setCheckable(True)
+        self._btn_toggle_table.setFixedWidth(140)
+        table_header = QHBoxLayout()
+        table_header.addWidget(self._btn_toggle_table)
+        self._btn_relabel = QPushButton("Re-label All")
+        self._btn_relabel.setFixedWidth(100)
+        self._btn_relabel.setEnabled(False)
+        table_header.addWidget(self._btn_relabel)
+        table_header.addStretch()
+        root.addLayout(table_header)
+
+        self._slice_table = QTableWidget(0, 5)
+        self._slice_table.setHorizontalHeaderLabels(["#", "Start", "End", "Duration", "Label"])
+        self._slice_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self._slice_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self._slice_table.setMaximumHeight(180)
+        self._slice_table.setVisible(False)
+        self._slice_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        root.addWidget(self._slice_table)
 
         # --- Controls row ---
         controls = QHBoxLayout()
@@ -181,6 +208,15 @@ class MainWindow(QMainWindow):
         r7.addWidget(self._spin_fade)
         el.addLayout(r7)
 
+        r_sbpm = QHBoxLayout()
+        r_sbpm.addWidget(QLabel("Source BPM"))
+        self._spin_source_bpm = QDoubleSpinBox()
+        self._spin_source_bpm.setRange(0.0, 300.0)
+        self._spin_source_bpm.setSpecialValueText("none")
+        self._spin_source_bpm.setValue(0.0)
+        r_sbpm.addWidget(self._spin_source_bpm)
+        el.addLayout(r_sbpm)
+
         export_grp.setLayout(el)
         controls.addWidget(export_grp)
 
@@ -238,7 +274,10 @@ class MainWindow(QMainWindow):
         self._btn_generate.clicked.connect(self._generate_preset)
         self._waveform.slice_clicked.connect(self._play_slice)
         self._waveform.markers_changed.connect(self._on_markers_changed)
+        self._waveform.marker_added.connect(self._on_marker_added)
         self._combo_mode.currentTextChanged.connect(self._on_mode_changed)
+        self._btn_toggle_table.toggled.connect(self._toggle_slice_table)
+        self._btn_relabel.clicked.connect(self._relabel_all)
 
     # ------------------------------------------------------------------
     # File loading
@@ -268,9 +307,12 @@ class MainWindow(QMainWindow):
         self._lbl_file.setStyleSheet("color: #eee;")
         self._waveform.set_audio(y, sr)
         self._waveform.set_markers([])
+        self._waveform.set_labels([])
         self._btn_analyze.setEnabled(True)
         self._btn_generate.setEnabled(False)
         self._btn_play_all.setEnabled(False)
+        self._btn_relabel.setEnabled(False)
+        self._slice_table.setRowCount(0)
         self._lbl_info.setText("")
         self.statusBar().showMessage("File loaded.", 3000)
 
@@ -320,12 +362,19 @@ class MainWindow(QMainWindow):
 
         self._slice_map = sm
 
-        # Update waveform markers
+        # Auto-label slices
+        labels = auto_label(self._y, self._sr, sm.slices)
+        for i, s in enumerate(sm.slices):
+            s.label = labels[i] if i < len(labels) else ""
+
+        # Update waveform markers and labels
         markers = [s.start_sample for s in sm.slices]
         self._waveform.set_markers(markers)
+        self._waveform.set_labels(labels)
 
         self._btn_generate.setEnabled(True)
         self._btn_play_all.setEnabled(True)
+        self._btn_relabel.setEnabled(True)
 
         bpm_str = f"{sm.bpm:.1f}"
         if quantize_bpm:
@@ -335,6 +384,7 @@ class MainWindow(QMainWindow):
         self._lbl_info.setText(
             f"{len(sm.slices)} slices  |  BPM: {bpm_str}  |  {sm.duration:.2f}s"
         )
+        self._rebuild_slice_table()
         self.statusBar().showMessage("Analysis complete.", 3000)
 
     def _on_markers_changed(self):
@@ -342,6 +392,7 @@ class MainWindow(QMainWindow):
         if self._y is None:
             return
         markers = self._waveform.get_markers()
+        labels = self._waveform.get_labels()
         total = len(self._y)
         slices = []
         for i, start in enumerate(markers):
@@ -352,12 +403,101 @@ class MainWindow(QMainWindow):
                 end_sample=int(end),
                 start_seconds=start / self._sr,
                 end_seconds=end / self._sr,
+                label=labels[i] if i < len(labels) else "",
             ))
         if self._slice_map is not None:
             self._slice_map.slices = slices
         self._lbl_info.setText(
             f"{len(slices)} slices  |  BPM: {self._slice_map.bpm:.1f if self._slice_map else '?'}  |  markers adjusted"
         )
+        self._rebuild_slice_table()
+
+    def _on_marker_added(self, index: int):
+        """Auto-label a newly added slice."""
+        if self._y is None or self._slice_map is None:
+            return
+        markers = self._waveform.get_markers()
+        total = len(self._y)
+        start = markers[index]
+        end = markers[index + 1] if index + 1 < len(markers) else total
+        label = auto_label_single(self._y, self._sr, start, end)
+        # Update waveform labels
+        labels = self._waveform.get_labels()
+        if index < len(labels):
+            labels[index] = label
+        self._waveform.set_labels(labels)
+        # Rebuild slice map
+        self._on_markers_changed()
+
+    # ------------------------------------------------------------------
+    # Slice table
+    # ------------------------------------------------------------------
+
+    def _toggle_slice_table(self, checked: bool):
+        self._slice_table.setVisible(checked)
+        self._btn_toggle_table.setText("Hide Slice List" if checked else "Show Slice List")
+
+    def _rebuild_slice_table(self):
+        """Rebuild the table from current slice map."""
+        self._slice_table.blockSignals(True)
+        if self._slice_map is None:
+            self._slice_table.setRowCount(0)
+            self._slice_table.blockSignals(False)
+            return
+
+        slices = self._slice_map.slices
+        self._slice_table.setRowCount(len(slices))
+
+        for i, s in enumerate(slices):
+            # Index
+            item_idx = QTableWidgetItem(str(i))
+            item_idx.setFlags(item_idx.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self._slice_table.setItem(i, 0, item_idx)
+            # Start
+            item_start = QTableWidgetItem(f"{s.start_seconds:.3f}s")
+            item_start.setFlags(item_start.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self._slice_table.setItem(i, 1, item_start)
+            # End
+            item_end = QTableWidgetItem(f"{s.end_seconds:.3f}s")
+            item_end.setFlags(item_end.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self._slice_table.setItem(i, 2, item_end)
+            # Duration
+            dur = s.end_seconds - s.start_seconds
+            item_dur = QTableWidgetItem(f"{dur:.3f}s")
+            item_dur.setFlags(item_dur.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self._slice_table.setItem(i, 3, item_dur)
+            # Label combo
+            combo = QComboBox()
+            combo.setEditable(True)
+            combo.addItems(STANDARD_LABELS)
+            if s.label and s.label not in STANDARD_LABELS:
+                combo.addItem(s.label)
+            combo.setCurrentText(s.label)
+            combo.currentTextChanged.connect(lambda text, idx=i: self._on_label_changed(idx, text))
+            self._slice_table.setCellWidget(i, 4, combo)
+
+        self._slice_table.blockSignals(False)
+
+    def _on_label_changed(self, index: int, label: str):
+        """Handle label change from the table combo box."""
+        if self._slice_map is None or index >= len(self._slice_map.slices):
+            return
+        self._slice_map.slices[index].label = label
+        labels = self._waveform.get_labels()
+        if index < len(labels):
+            labels[index] = label
+            self._waveform.set_labels(labels)
+
+    def _relabel_all(self):
+        """Re-run auto-labeling on all current slices."""
+        if self._y is None or self._slice_map is None:
+            return
+        labels = auto_label(self._y, self._sr, self._slice_map.slices)
+        for i, s in enumerate(self._slice_map.slices):
+            s.label = labels[i] if i < len(labels) else ""
+        self._waveform.set_labels(labels)
+        self._rebuild_slice_table()
+        self.statusBar().showMessage("Labels updated.", 3000)
 
     # ------------------------------------------------------------------
     # Playback
@@ -445,6 +585,14 @@ class MainWindow(QMainWindow):
                 include_full_key=include_full,
             )
             preset_path = install_preset(preset_bytes, preset_name)
+
+            # Export chopmap JSON
+            source_bpm_val = self._spin_source_bpm.value()
+            source_bpm = source_bpm_val if source_bpm_val > 0 else None
+            chopmap_path = export_chopmap(
+                self._slice_map, export_result, preset_name,
+                chop_root=chop_root, source_bpm=source_bpm,
+            )
         except Exception as e:
             QMessageBox.critical(self, "Export Error", str(e))
             return
@@ -459,9 +607,11 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, "Preset Generated",
             f"Preset: {preset_path.name}\n"
+            f"Chopmap: {chopmap_path.name}\n"
             f"Audio: {audio_dir}\n"
             f"Zones: {n_zones} ({len(export_result.chop_paths)} chops)\n"
             f"Keys: {chop_start} - {chop_end}\n\n"
-            f"Open GarageBand and load the preset from the AUSampler browser.",
+            f"Open GarageBand and load the preset from the AUSampler browser.\n"
+            f"Use chopshop-midi with the chopmap to generate MIDI patterns.",
         )
         self.statusBar().showMessage(f"Preset saved: {preset_path}", 5000)

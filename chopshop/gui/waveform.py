@@ -1,7 +1,9 @@
 import numpy as np
 from PySide6.QtCore import Qt, Signal, QPointF
-from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QBrush
+from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QBrush, QFont, QFontMetrics
 from PySide6.QtWidgets import QWidget
+
+from ..labeler import LABEL_COLORS, DEFAULT_LABEL_COLOR
 
 
 # Alternate colours for adjacent slices
@@ -15,13 +17,16 @@ MARKER_COLOR = QColor(255, 80, 80)
 MARKER_HOVER_COLOR = QColor(255, 40, 40)
 PLAYHEAD_COLOR = QColor(255, 165, 0)
 BG_COLOR = QColor(28, 28, 30)
-GRID_COLOR = QColor(255, 255, 255, 25)
+
+LABEL_FONT = QFont()
+LABEL_FONT.setPointSize(9)
 
 
 class WaveformWidget(QWidget):
     """Draws an audio waveform with draggable vertical slice markers."""
 
-    markers_changed = Signal()       # emitted when user drags a marker
+    markers_changed = Signal()       # emitted when user drags/adds/deletes a marker
+    marker_added = Signal(int)       # emitted with index of newly added marker
     slice_clicked = Signal(int)      # emitted when user clicks inside a slice region
 
     MARKER_HIT_PX = 6               # grab zone half-width in pixels
@@ -43,6 +48,7 @@ class WaveformWidget(QWidget):
         # Slice markers as sample positions (always sorted).
         # The first marker is always 0 and is not draggable.
         self._markers: list[int] = []
+        self._labels: list[str] = []
 
         # Interaction state
         self._dragging_idx: int | None = None
@@ -64,10 +70,24 @@ class WaveformWidget(QWidget):
 
     def set_markers(self, sample_positions: list[int]):
         self._markers = sorted(sample_positions)
+        # Pad or trim labels to match
+        while len(self._labels) < len(self._markers):
+            self._labels.append("")
+        self._labels = self._labels[:len(self._markers)]
         self.update()
 
     def get_markers(self) -> list[int]:
         return list(self._markers)
+
+    def set_labels(self, labels: list[str]):
+        self._labels = list(labels)
+        while len(self._labels) < len(self._markers):
+            self._labels.append("")
+        self._labels = self._labels[:len(self._markers)]
+        self.update()
+
+    def get_labels(self) -> list[str]:
+        return list(self._labels)
 
     def set_playhead(self, sample: int):
         self._playhead = sample
@@ -78,6 +98,7 @@ class WaveformWidget(QWidget):
         self._envelope_min = None
         self._envelope_max = None
         self._markers = []
+        self._labels = []
         self._playhead = -1
         self.update()
 
@@ -156,7 +177,9 @@ class WaveformWidget(QWidget):
             y_max = mid - self._envelope_min[i] * mid
             p.drawLine(QPointF(x, y_min), QPointF(x, y_max))
 
-        # Markers
+        # Markers + labels
+        p.setFont(LABEL_FONT)
+        fm = QFontMetrics(LABEL_FONT)
         for i, s in enumerate(self._markers):
             x = self._sample_to_x(s)
             is_hover = (i == self._hover_idx)
@@ -168,6 +191,26 @@ class WaveformWidget(QWidget):
             if i > 0:  # first marker (0) is not draggable
                 p.setBrush(QBrush(color))
                 p.drawRect(int(x - 4), 0, 8, 10)
+                p.setBrush(Qt.BrushStyle.NoBrush)
+
+            # Draw label pill
+            if i < len(self._labels) and self._labels[i]:
+                label = self._labels[i]
+                hex_color = LABEL_COLORS.get(label, DEFAULT_LABEL_COLOR)
+                pill_color = QColor(hex_color)
+                pill_color.setAlpha(200)
+                text_w = fm.horizontalAdvance(label) + 8
+                text_h = fm.height() + 4
+                pill_x = int(x + 4)
+                pill_y = 14
+                # Don't draw off the right edge
+                if pill_x + text_w > w:
+                    pill_x = int(x - text_w - 2)
+                p.setBrush(QBrush(pill_color))
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawRoundedRect(pill_x, pill_y, text_w, text_h, 3, 3)
+                p.setPen(QColor(0, 0, 0))
+                p.drawText(pill_x + 4, pill_y + fm.ascent() + 2, label)
                 p.setBrush(Qt.BrushStyle.NoBrush)
 
         # Playhead
@@ -209,6 +252,8 @@ class WaveformWidget(QWidget):
             idx = self._marker_at_x(event.position().x())
             if idx is not None and idx > 0:
                 self._markers.pop(idx)
+                if idx < len(self._labels):
+                    self._labels.pop(idx)
                 self._hover_idx = None
                 self.update()
                 self.markers_changed.emit()
@@ -236,8 +281,12 @@ class WaveformWidget(QWidget):
         if sample not in self._markers:
             self._markers.append(sample)
             self._markers.sort()
+            # Find the index where it was inserted
+            new_idx = self._markers.index(sample)
+            self._labels.insert(new_idx, "")
             self.update()
             self.markers_changed.emit()
+            self.marker_added.emit(new_idx)
 
     def mouseMoveEvent(self, event):
         x = event.position().x()

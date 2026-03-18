@@ -19,6 +19,7 @@ class Slice:
     end_sample: int
     start_seconds: float
     end_seconds: float
+    label: str = ""
 
 
 @dataclass
@@ -30,6 +31,7 @@ class SliceMap:
     total_samples: int
     mode: str
     slices: list[Slice]
+    source_bpm: float | None = None
 
 
 def analyze(

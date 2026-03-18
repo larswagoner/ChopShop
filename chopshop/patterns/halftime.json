@@ -1,0 +1,28 @@
+{
+  "name": "Halftime",
+  "description": "Halftime feel at jungle tempo — snare on beat 3 only",
+  "bpm": 170,
+  "bars": 1,
+  "time_signature": [4, 4],
+  "resolution": 16,
+  "tracks": [
+    {
+      "name": "drums",
+      "channel": 9,
+      "steps": [
+        {"pos": 0,  "label": "kick",       "velocity": 120},
+        {"pos": 0,  "label": "hat_closed", "velocity": 90},
+        {"pos": 2,  "label": "hat_closed", "velocity": 75},
+        {"pos": 4,  "label": "hat_closed", "velocity": 85},
+        {"pos": 5,  "label": "kick",       "velocity": 95},
+        {"pos": 6,  "label": "hat_closed", "velocity": 75},
+        {"pos": 8,  "label": "snare",      "velocity": 127},
+        {"pos": 8,  "label": "hat_open",   "velocity": 95},
+        {"pos": 10, "label": "hat_closed", "velocity": 80},
+        {"pos": 12, "label": "hat_closed", "velocity": 85},
+        {"pos": 13, "label": "snare_ghost","velocity": 60},
+        {"pos": 14, "label": "hat_closed", "velocity": 75}
+      ]
+    }
+  ]
+}

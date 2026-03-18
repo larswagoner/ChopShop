@@ -1,0 +1,29 @@
+{
+  "name": "Amen Classic",
+  "description": "Approximation of the original Amen break rhythm, 1 bar",
+  "bpm": 170,
+  "bars": 1,
+  "time_signature": [4, 4],
+  "resolution": 16,
+  "tracks": [
+    {
+      "name": "drums",
+      "channel": 9,
+      "steps": [
+        {"pos": 0,  "label": "kick",       "velocity": 127},
+        {"pos": 0,  "label": "ride",       "velocity": 100},
+        {"pos": 2,  "label": "ride",       "velocity": 90},
+        {"pos": 4,  "label": "snare",      "velocity": 120},
+        {"pos": 4,  "label": "ride",       "velocity": 100},
+        {"pos": 6,  "label": "ride",       "velocity": 85},
+        {"pos": 6,  "label": "kick",       "velocity": 100},
+        {"pos": 8,  "label": "ride",       "velocity": 100},
+        {"pos": 10, "label": "kick",       "velocity": 110},
+        {"pos": 10, "label": "ride",       "velocity": 90},
+        {"pos": 12, "label": "snare",      "velocity": 127},
+        {"pos": 12, "label": "ride",       "velocity": 100},
+        {"pos": 14, "label": "ride",       "velocity": 85}
+      ]
+    }
+  ]
+}

@@ -12,11 +12,13 @@ dependencies = [
     "soundfile>=0.12.0",
     "numpy>=1.24.0",
     "sounddevice>=0.4.6",
+    "mido>=1.3.0",
 ]
 
 [project.scripts]
 chopshop = "chopshop.cli:main"
 chopshop-gui = "chopshop.gui:main"
+chopshop-midi = "chopshop.midi_gen:main"
 
 [project.optional-dependencies]
 gui = ["PySide6>=6.6.0"]
