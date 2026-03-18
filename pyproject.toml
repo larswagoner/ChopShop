@@ -16,6 +16,8 @@ dependencies = [
 
 [project.scripts]
 chopshop = "chopshop.cli:main"
+chopshop-gui = "chopshop.gui:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+gui = ["PySide6>=6.6.0"]
+dev = ["pytest>=7.0", "PySide6>=6.6.0"]
