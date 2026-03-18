@@ -204,6 +204,15 @@ class WaveformWidget(QWidget):
         return None
 
     def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            # Right-click: delete marker (except first)
+            idx = self._marker_at_x(event.position().x())
+            if idx is not None and idx > 0:
+                self._markers.pop(idx)
+                self._hover_idx = None
+                self.update()
+                self.markers_changed.emit()
+            return
         if event.button() != Qt.MouseButton.LeftButton:
             return
         idx = self._marker_at_x(event.position().x())
@@ -218,6 +227,17 @@ class WaveformWidget(QWidget):
                 if self._markers[i] <= sample < end:
                     self.slice_clicked.emit(i)
                     break
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton or self._y is None:
+            return
+        # Double-click: add a new marker at this position
+        sample = self._x_to_sample(event.position().x())
+        if sample not in self._markers:
+            self._markers.append(sample)
+            self._markers.sort()
+            self.update()
+            self.markers_changed.emit()
 
     def mouseMoveEvent(self, event):
         x = event.position().x()
