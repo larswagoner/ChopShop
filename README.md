@@ -37,7 +37,11 @@ pip install -e ".[gui]"
 ### GUI
 
 ```bash
+# If venv is activated:
 chopshop-gui
+
+# Or run directly without activating:
+.venv/bin/chopshop-gui
 ```
 
 Open a WAV, pick your mode and settings, click **Analyze** to see slices on the waveform. Click any slice to preview it. Drag markers to adjust boundaries. Hit **Generate Preset** when you're happy.

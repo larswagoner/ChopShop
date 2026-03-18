@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -165,6 +166,13 @@ class MainWindow(QMainWindow):
         export_grp = self._group("Export")
         el = QVBoxLayout()
 
+        rn = QHBoxLayout()
+        rn.addWidget(QLabel("Name"))
+        self._txt_preset_name = QLineEdit()
+        self._txt_preset_name.setPlaceholderText("(from filename)")
+        rn.addWidget(self._txt_preset_name)
+        el.addLayout(rn)
+
         r7 = QHBoxLayout()
         r7.addWidget(QLabel("Fade (ms)"))
         self._spin_fade = QDoubleSpinBox()
@@ -255,6 +263,7 @@ class MainWindow(QMainWindow):
         self._y = y
         self._sr = sr
         self._slice_map = None
+        self._txt_preset_name.setText(self._input_path.stem)
         self._lbl_file.setText(f"{self._input_path.name}  ({len(y)/sr:.2f}s, {sr}Hz)")
         self._lbl_file.setStyleSheet("color: #eee;")
         self._waveform.set_audio(y, sr)
@@ -411,6 +420,7 @@ class MainWindow(QMainWindow):
             return
 
         source_name = self._input_path.stem
+        preset_name = self._txt_preset_name.text().strip() or source_name
         chop_root = self._combo_chop_root.currentData()
         cue_root = self._combo_cue_root.currentData()
         include_full = not self._chk_no_full.isChecked()
@@ -429,12 +439,12 @@ class MainWindow(QMainWindow):
             )
 
             preset_bytes = generate_preset(
-                export_result, self._slice_map, source_name,
+                export_result, self._slice_map, preset_name,
                 chop_root=chop_root,
                 cue_root=cue_root,
                 include_full_key=include_full,
             )
-            preset_path = install_preset(preset_bytes, source_name)
+            preset_path = install_preset(preset_bytes, preset_name)
         except Exception as e:
             QMessageBox.critical(self, "Export Error", str(e))
             return
