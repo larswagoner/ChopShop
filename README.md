@@ -244,6 +244,9 @@ pytest
 
 54 tests, all passing.
 
+## Inspo
+https://www.youtube.com/shorts/DAzkqfxrNaY
+
 ## License
 
 MIT
