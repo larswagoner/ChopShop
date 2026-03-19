@@ -19,6 +19,7 @@ dependencies = [
 chopshop = "chopshop.cli:main"
 chopshop-gui = "chopshop.gui:main"
 chopshop-midi = "chopshop.midi_gen:main"
+chopshop-midi-gui = "chopshop.gui.midi_main:main"
 
 [project.optional-dependencies]
 gui = ["PySide6>=6.6.0"]

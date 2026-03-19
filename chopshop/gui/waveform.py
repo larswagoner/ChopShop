@@ -1,7 +1,7 @@
 import numpy as np
 from PySide6.QtCore import Qt, Signal, QPointF, QRectF
-from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QBrush, QFont, QFontMetrics
-from PySide6.QtWidgets import QWidget, QComboBox
+from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QBrush, QFont, QFontMetrics, QAction
+from PySide6.QtWidgets import QWidget, QMenu, QInputDialog
 
 from ..labeler import LABEL_COLORS, DEFAULT_LABEL_COLOR, STANDARD_LABELS
 
@@ -53,7 +53,6 @@ class WaveformWidget(QWidget):
 
         # Pill hit rects for click-to-edit (rebuilt each paint)
         self._pill_rects: list[tuple[int, QRectF]] = []  # (marker_index, rect)
-        self._active_combo: QComboBox | None = None
 
         # Interaction state
         self._dragging_idx: int | None = None
@@ -261,34 +260,40 @@ class WaveformWidget(QWidget):
                 return idx
         return None
 
-    def _show_label_combo(self, marker_idx: int, rect: QRectF):
-        """Show an inline combobox over the pill for label editing."""
-        if self._active_combo is not None:
-            self._active_combo.deleteLater()
-        combo = QComboBox(self)
-        combo.setEditable(True)
-        combo.addItems(STANDARD_LABELS)
+    def _show_label_menu(self, marker_idx: int, pos: QPointF):
+        """Show a context menu for label selection at the pill position."""
         current = self._labels[marker_idx] if marker_idx < len(self._labels) else ""
-        if current and current not in STANDARD_LABELS:
-            combo.addItem(current)
-        combo.setCurrentText(current)
-        combo.setGeometry(int(rect.x()), int(rect.y()), max(int(rect.width()) + 40, 110), int(rect.height()) + 4)
-        combo.setFocus()
-        combo.showPopup()
+        menu = QMenu(self)
 
-        def _on_done(text: str, idx=marker_idx):
-            if idx < len(self._labels):
-                self._labels[idx] = text
-            self.update()
-            self.label_changed.emit(idx, text)
-            combo.deleteLater()
-            self._active_combo = None
+        for label in STANDARD_LABELS:
+            hex_c = LABEL_COLORS.get(label, DEFAULT_LABEL_COLOR)
+            action = menu.addAction(label)
+            if label == current:
+                action.setCheckable(True)
+                action.setChecked(True)
+            # Store the label text for the callback
+            action.setData(label)
 
-        combo.activated.connect(lambda _: _on_done(combo.currentText()))
-        # Also accept on focus loss (e.g. typed custom text then clicked away)
-        combo.lineEdit().editingFinished.connect(lambda: _on_done(combo.currentText()))
-        combo.show()
-        self._active_combo = combo
+        menu.addSeparator()
+        custom_action = menu.addAction("Custom...")
+
+        chosen = menu.exec(self.mapToGlobal(pos.toPoint()))
+        if chosen is None:
+            return
+        if chosen == custom_action:
+            text, ok = QInputDialog.getText(
+                self, "Custom Label", "Enter label:", text=current,
+            )
+            if not ok or not text.strip():
+                return
+            new_label = text.strip()
+        else:
+            new_label = chosen.data()
+
+        if marker_idx < len(self._labels):
+            self._labels[marker_idx] = new_label
+        self.update()
+        self.label_changed.emit(marker_idx, new_label)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
@@ -307,13 +312,7 @@ class WaveformWidget(QWidget):
         # Check if clicking on a label pill
         pill_idx = self._pill_at(event.position().x(), event.position().y())
         if pill_idx is not None:
-            rect = None
-            for pi, pr in self._pill_rects:
-                if pi == pill_idx:
-                    rect = pr
-                    break
-            if rect is not None:
-                self._show_label_combo(pill_idx, rect)
+            self._show_label_menu(pill_idx, event.position())
             return
         idx = self._marker_at_x(event.position().x())
         if idx is not None:

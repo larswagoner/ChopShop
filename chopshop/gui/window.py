@@ -234,6 +234,8 @@ class MainWindow(QMainWindow):
         self._btn_generate = QPushButton("Generate Preset")
         self._btn_generate.setEnabled(False)
         self._btn_generate.setStyleSheet("font-weight: bold;")
+        self._btn_midi_gui = QPushButton("MIDI Tool")
+        self._btn_midi_gui.setToolTip("Open the MIDI pattern generator")
 
         self._lbl_info = QLabel("")
         self._lbl_info.setStyleSheet("color: #aaa;")
@@ -245,6 +247,7 @@ class MainWindow(QMainWindow):
         bottom.addWidget(self._lbl_info)
         bottom.addStretch()
         bottom.addWidget(self._btn_generate)
+        bottom.addWidget(self._btn_midi_gui)
         root.addLayout(bottom)
 
         # Status bar
@@ -273,6 +276,7 @@ class MainWindow(QMainWindow):
         self._btn_play_all.clicked.connect(self._play_all_slices)
         self._btn_stop.clicked.connect(self._stop_playback)
         self._btn_generate.clicked.connect(self._generate_preset)
+        self._btn_midi_gui.clicked.connect(self._open_midi_gui)
         self._waveform.slice_clicked.connect(self._play_slice)
         self._waveform.markers_changed.connect(self._on_markers_changed)
         self._waveform.marker_added.connect(self._on_marker_added)
@@ -644,3 +648,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Chopmap path copied to clipboard.", 5000)
         else:
             self.statusBar().showMessage(f"Preset saved: {preset_path}", 5000)
+
+    def _open_midi_gui(self):
+        """Launch the MIDI pattern generator window."""
+        from .midi_window import MidiWindow
+        self._midi_win = MidiWindow()
+        self._midi_win.show()

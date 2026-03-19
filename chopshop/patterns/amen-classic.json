@@ -1,6 +1,6 @@
 {
   "name": "Amen Classic",
-  "description": "Approximation of the original Amen break rhythm, 1 bar",
+  "description": "The classic Amen break rhythm — dense, rolling, uses kick and snare",
   "bpm": 170,
   "bars": 1,
   "time_signature": [4, 4],
@@ -10,19 +10,21 @@
       "name": "drums",
       "channel": 9,
       "steps": [
-        {"pos": 0,  "label": "kick",       "velocity": 127},
-        {"pos": 0,  "label": "ride",       "velocity": 100},
-        {"pos": 2,  "label": "ride",       "velocity": 90},
-        {"pos": 4,  "label": "snare",      "velocity": 120},
-        {"pos": 4,  "label": "ride",       "velocity": 100},
-        {"pos": 6,  "label": "ride",       "velocity": 85},
-        {"pos": 6,  "label": "kick",       "velocity": 100},
-        {"pos": 8,  "label": "ride",       "velocity": 100},
-        {"pos": 10, "label": "kick",       "velocity": 110},
-        {"pos": 10, "label": "ride",       "velocity": 90},
-        {"pos": 12, "label": "snare",      "velocity": 127},
-        {"pos": 12, "label": "ride",       "velocity": 100},
-        {"pos": 14, "label": "ride",       "velocity": 85}
+        {"pos": 0,  "label": "kick",  "velocity": 127},
+        {"pos": 1,  "label": "snare", "velocity": 60},
+        {"pos": 2,  "label": "snare", "velocity": 85},
+        {"pos": 3,  "label": "kick",  "velocity": 90},
+        {"pos": 4,  "label": "snare", "velocity": 127},
+        {"pos": 5,  "label": "kick",  "velocity": 70},
+        {"pos": 6,  "label": "kick",  "velocity": 110},
+        {"pos": 7,  "label": "snare", "velocity": 55},
+        {"pos": 8,  "label": "kick",  "velocity": 100},
+        {"pos": 9,  "label": "snare", "velocity": 65},
+        {"pos": 10, "label": "kick",  "velocity": 120},
+        {"pos": 11, "label": "snare", "velocity": 75},
+        {"pos": 12, "label": "snare", "velocity": 127, "length": 2},
+        {"pos": 14, "label": "kick",  "velocity": 95},
+        {"pos": 15, "label": "snare", "velocity": 60}
       ]
     }
   ]

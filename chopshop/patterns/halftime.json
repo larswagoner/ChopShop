@@ -1,6 +1,6 @@
 {
   "name": "Halftime",
-  "description": "Halftime feel at jungle tempo — snare on beat 3 only",
+  "description": "Halftime feel at jungle tempo — snare on beat 3, spacious but punchy",
   "bpm": 170,
   "bars": 1,
   "time_signature": [4, 4],
@@ -10,18 +10,16 @@
       "name": "drums",
       "channel": 9,
       "steps": [
-        {"pos": 0,  "label": "kick",       "velocity": 120},
-        {"pos": 0,  "label": "hat_closed", "velocity": 90},
-        {"pos": 2,  "label": "hat_closed", "velocity": 75},
-        {"pos": 4,  "label": "hat_closed", "velocity": 85},
-        {"pos": 5,  "label": "kick",       "velocity": 95},
-        {"pos": 6,  "label": "hat_closed", "velocity": 75},
-        {"pos": 8,  "label": "snare",      "velocity": 127},
-        {"pos": 8,  "label": "hat_open",   "velocity": 95},
-        {"pos": 10, "label": "hat_closed", "velocity": 80},
-        {"pos": 12, "label": "hat_closed", "velocity": 85},
-        {"pos": 13, "label": "snare_ghost","velocity": 60},
-        {"pos": 14, "label": "hat_closed", "velocity": 75}
+        {"pos": 0,  "label": "kick",  "velocity": 127},
+        {"pos": 3,  "label": "kick",  "velocity": 80},
+        {"pos": 5,  "label": "kick",  "velocity": 95},
+        {"pos": 7,  "label": "snare", "velocity": 55},
+        {"pos": 8,  "label": "snare", "velocity": 127, "length": 2},
+        {"pos": 10, "label": "kick",  "velocity": 85},
+        {"pos": 12, "label": "kick",  "velocity": 100},
+        {"pos": 13, "label": "snare", "velocity": 60},
+        {"pos": 14, "label": "kick",  "velocity": 90},
+        {"pos": 15, "label": "snare", "velocity": 50}
       ]
     }
   ]

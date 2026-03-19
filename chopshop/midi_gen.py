@@ -101,8 +101,14 @@ def generate_midi(
         time=0,
     ))
 
-    # Default note length in ticks (1 step)
-    default_note_ticks = ticks_per_step
+    # Build a lookup of slice durations (in ticks) for note lengths
+    slice_dur_ticks: dict[int, int] = {}
+    for s in chopmap.get("slices", []):
+        dur_sec = s.get("duration_sec", 0.1)
+        dur_ticks = int(dur_sec * bpm / 60 * ticks_per_beat)
+        note = label_map.get(s.get("label", ""))
+        if note is not None and note not in slice_dur_ticks:
+            slice_dur_ticks[note] = dur_ticks
 
     warnings = []
 
@@ -115,32 +121,58 @@ def generate_midi(
 
         channel = track_def.get("channel", 9)  # default to drum channel
 
-        # Collect all note events across all bar repetitions
-        events = []  # (abs_tick, 'on'|'off', note, velocity)
+        # Collect note-on events first, then compute note-off from slice duration
+        # or gap to next same-note hit
+        raw_notes = []  # (abs_tick, note, velocity, label)
 
         steps = track_def.get("steps", [])
         for bar_rep in range(bars):
             bar_offset = bar_rep * pattern_steps
             for step in steps:
                 pos = step["pos"]
-                actual_pos = (bar_offset + pos) % (steps_per_bar * bars)
-                if bar_rep > 0:
-                    actual_pos = bar_offset + (pos % pattern_steps)
+                actual_pos = bar_offset + (pos % pattern_steps)
 
                 label = step["label"]
                 velocity = step.get("velocity", 100)
+                note_len = step.get("length", None)  # optional per-step length in steps
 
                 note = label_map.get(label)
                 if note is None:
-                    if label not in [w for w in warnings]:
+                    if label not in warnings:
                         warnings.append(label)
                     continue
 
                 tick_on = actual_pos * ticks_per_step
-                tick_off = tick_on + default_note_ticks
+                raw_notes.append((tick_on, note, velocity, note_len))
 
-                events.append((tick_on, "on", note, velocity))
-                events.append((tick_off, "off", note, velocity))
+        # Sort by time
+        raw_notes.sort(key=lambda e: e[0])
+
+        # Compute note-off: use explicit length, else hold until next same-note,
+        # else use slice duration, else use 2 steps as fallback
+        events = []
+        total_ticks = steps_per_bar * bars * ticks_per_step
+        for i, (tick_on, note, vel, explicit_len) in enumerate(raw_notes):
+            if explicit_len is not None:
+                note_ticks = explicit_len * ticks_per_step
+            else:
+                # Find next hit of same note
+                next_same = None
+                for j in range(i + 1, len(raw_notes)):
+                    if raw_notes[j][1] == note:
+                        next_same = raw_notes[j][0]
+                        break
+                if next_same is not None:
+                    # Hold until just before next same-note hit
+                    note_ticks = next_same - tick_on - 1
+                else:
+                    # Use slice duration or 2 steps as fallback
+                    note_ticks = slice_dur_ticks.get(note, ticks_per_step * 2)
+            # Clamp: at least 1 tick, don't exceed track end
+            note_ticks = max(1, min(note_ticks, total_ticks - tick_on - 1))
+            tick_off = tick_on + note_ticks
+            events.append((tick_on, "on", note, vel))
+            events.append((tick_off, "off", note, vel))
 
         # Sort events by time, with 'off' before 'on' at same tick
         events.sort(key=lambda e: (e[0], 0 if e[1] == "off" else 1))
