@@ -14,7 +14,7 @@ Please be warned that this was vibecoded for personal use and is made public mer
 
 1. Load a WAV file.
 2. Analyze. ChopShop detects transients automatically, or you can slice by BPM grid or equal divisions.
-3. Adjust. Drag slice markers, add or remove cut points, relabel slices
+3. Adjust. Drag slice markers, add or remove cut points, relabel slices.
 4. Generate. Exports individual WAV files for each slice and builds an `.aupreset` file installed directly to GarageBand's preset folder.
 
 In GarageBand, create a Software Instrument track, open AUSampler, and load the preset. Each chop is mapped to a key starting at the chop root. If you want the sample to continue playing from where it was sliced when pressing a key, play the corresponding cue key, starting at the cue root. 
@@ -22,6 +22,7 @@ In GarageBand, create a Software Instrument track, open AUSampler, and load the 
 ## What's Solid, What's Rough
 
 **Reliable:**
+- Transient Detection: I almost always adjust the cuts by hand, but it does a pretty good first job.
 - Audio slicing (onset detection, grid, and equal modes) — well-tested and accurate.
 - AUSampler preset generation — correctly builds the XML plist with MIDI zone mapping, file references, and all the undocumented boilerplate that AUSampler needs.
 - WAV export with optional fade-out and cue zones.
