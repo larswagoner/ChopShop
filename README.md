@@ -13,7 +13,7 @@ Please be warned that this was developed for personal use and is made public mer
 ## How It Works
 
 1. Load a WAV file.
-2. Slice it. ChopShop detects transients automatically, or you can slice by BPM grid or equal divisions.
+2. Analyze. ChopShop detects transients automatically, or you can slice by BPM grid or equal divisions.
 3. Adjust. Drag slice markers, add or remove cut points, relabel slices
 4. Generate. Exports individual WAV files for each slice and builds an `.aupreset` file installed directly to GarageBand's preset folder.
 
