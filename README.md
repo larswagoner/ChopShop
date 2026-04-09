@@ -6,18 +6,16 @@ A sample chopper for GarageBand. Load a breakbeat, slice it into individual hits
 
 ## Why
 
-This is a personal project. I wanted to make jungle and drum & bass in GarageBand. The core technique is simple: take a breakbeat loop, chop it into individual drum hits, map each hit to a keyboard key, and rearrange them into new patterns. Every serious DAW makes this easy — Ableton has Simpler, FL Studio has Slicex — but GarageBand's built-in sampler has no slicing workflow at all.
+I wanted to make jungle and drum & bass in GarageBand but was disappointed in the painfully slow workflow of chopping a breakbeat. ChopShop takes an audio loop, slices it up, and generates an `.aupreset` file that GarageBand's AUSampler instrument can load directly. There is automatic hit detection and classification that is not great and can be tweaked by hand, it takes seconds to chop a sample and obtain an instrument in GarageBand that can be played! There is a CLI and a GUI.
 
-ChopShop fills that gap. It takes an audio loop, slices it up, and generates an `.aupreset` file that GarageBand's AUSampler instrument can load directly. One key per chop, ready to play.
-
-If you're in the same boat — making beats in GarageBand and wishing you had a sample slicer — you're welcome to use it.
+Please be warned that this was developed for personal use and is made public merely out of interest.
 
 ## How It Works
 
-1. **Load** a WAV file (a breakbeat, vocal loop, melodic phrase — anything)
-2. **Slice** it — ChopShop detects transients (drum hits) automatically, or you can slice by BPM grid or equal divisions
-3. **Adjust** — drag slice markers, add or remove cut points, relabel slices
-4. **Generate** — exports individual WAV files for each slice and builds an `.aupreset` file installed directly to GarageBand's preset folder
+1. Load a WAV file.
+2. Slice it. ChopShop detects transients automatically, or you can slice by BPM grid or equal divisions.
+3. Adjust. Drag slice markers, add or remove cut points, relabel slices
+4. Generate. Exports individual WAV files for each slice and builds an `.aupreset` file installed directly to GarageBand's preset folder
 
 In GarageBand, create a Software Instrument track, open AUSampler, and load the preset. Each chop is mapped to a key starting at C3.
 
