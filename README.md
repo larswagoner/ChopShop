@@ -8,7 +8,7 @@ A sample chopper for GarageBand. Load a breakbeat, slice it into individual hits
 
 I wanted to make jungle and drum & bass in GarageBand but was disappointed in the painfully slow workflow of chopping a breakbeat. ChopShop takes an audio loop, slices it up, and generates an `.aupreset` file that GarageBand's AUSampler instrument can load directly. There is automatic hit detection and classification that is not great and can be tweaked by hand, it takes seconds to chop a sample and obtain an instrument in GarageBand that can be played! There is a CLI and a GUI.
 
-Please be warned that this was developed for personal use and is made public merely out of interest.
+Please be warned that this was developed for personal use and is made public merely out of interest. There also may be a better way to chop samples and this project could be completely useless.
 
 ## How It Works
 
