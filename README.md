@@ -15,22 +15,22 @@ Please be warned that this was developed for personal use and is made public mer
 1. Load a WAV file.
 2. Slice it. ChopShop detects transients automatically, or you can slice by BPM grid or equal divisions.
 3. Adjust. Drag slice markers, add or remove cut points, relabel slices
-4. Generate. Exports individual WAV files for each slice and builds an `.aupreset` file installed directly to GarageBand's preset folder
+4. Generate. Exports individual WAV files for each slice and builds an `.aupreset` file installed directly to GarageBand's preset folder.
 
-In GarageBand, create a Software Instrument track, open AUSampler, and load the preset. Each chop is mapped to a key starting at C3.
+In GarageBand, create a Software Instrument track, open AUSampler, and load the preset. Each chop is mapped to a key starting at the chop root. If you want the sample to continue playing from where it was sliced when pressing a key, play the corresponding cue key, starting at the cue root. 
 
 ## What's Solid, What's Rough
 
 **Reliable:**
-- Audio slicing (onset detection, grid, and equal modes) — well-tested and accurate
-- AUSampler preset generation — correctly builds the XML plist with MIDI zone mapping, file references, and all the undocumented boilerplate that AUSampler needs
-- WAV export with optional fade-out and cue zones
-- Interactive waveform — click to preview, drag markers to reposition, double-click to add cuts, right-click to remove
-- CLI with full control over every parameter
+- Audio slicing (onset detection, grid, and equal modes) — well-tested and accurate.
+- AUSampler preset generation — correctly builds the XML plist with MIDI zone mapping, file references, and all the undocumented boilerplate that AUSampler needs.
+- WAV export with optional fade-out and cue zones.
+- Interactive waveform — click to preview, drag markers to reposition, double-click to add cuts, right-click to remove.
+- CLI with full control over every parameter.
 
 **Experimental:**
 - **Auto-labeling** (kick, snare, hat, etc.) — uses spectral heuristics that work as rough suggestions, not ground truth. It's good enough to get you started but will frequently mislabel, especially on busy breaks. You can always click a label to change it.
-- **MIDI pattern generator** — generates `.mid` files with drum patterns mapped to your chopped sounds. Functional, but the built-in patterns are limited and the step editor is basic. Think of it as a starting point for getting a beat down quickly, not a production-ready sequencer.
+- **MIDI pattern generator** — generates `.mid` files with drum patterns mapped to your chopped sounds. Functional, but the built-in patterns are limited and the step editor is basic. Think of it as a starting point for getting a beat down quickly, not a production-ready sequencer. This is actually hilariously bad. 
 
 ## Getting Started
 
@@ -89,9 +89,9 @@ The [`examples/`](examples/) directory contains a 2.9-second breakbeat loop and 
 
 ## Guides
 
-- [GUI Guide](docs/GUI_GUIDE.md) — every control explained
-- [MIDI Guide](docs/MIDI_GUIDE.md) — pattern generator walkthrough
-- [Jungle Guide](docs/JUNGLE_GUIDE.md) — making 90s jungle in GarageBand with ChopShop
+- [GUI Guide](docs/GUI_GUIDE.md) — every control explained.
+- [MIDI Guide](docs/MIDI_GUIDE.md) — pattern generator walkthrough.
+- [Jungle Guide](docs/JUNGLE_GUIDE.md) — making 90s jungle in GarageBand with ChopShop.
 
 ## Development
 
