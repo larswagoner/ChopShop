@@ -6,9 +6,11 @@ A sample chopper for GarageBand. Load a breakbeat, slice it into individual hits
 
 ## Why
 
-I wanted to make jungle and drum & bass in GarageBand. The core technique is simple: take a breakbeat loop, chop it into individual drum hits, map each hit to a keyboard key, and rearrange them into new patterns. Every serious DAW makes this easy — Ableton has Simpler, FL Studio has Slicex — but GarageBand's built-in sampler has no slicing workflow at all.
+This is a personal project. I wanted to make jungle and drum & bass in GarageBand. The core technique is simple: take a breakbeat loop, chop it into individual drum hits, map each hit to a keyboard key, and rearrange them into new patterns. Every serious DAW makes this easy — Ableton has Simpler, FL Studio has Slicex — but GarageBand's built-in sampler has no slicing workflow at all.
 
 ChopShop fills that gap. It takes an audio loop, slices it up, and generates an `.aupreset` file that GarageBand's AUSampler instrument can load directly. One key per chop, ready to play.
+
+If you're in the same boat — making beats in GarageBand and wishing you had a sample slicer — you're welcome to use it.
 
 ## How It Works
 
